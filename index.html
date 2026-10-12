@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>quer ficar cmg?</title>
+    <style>
+      :root {
+        --fundo: #ffe4ec;
+        --fundo-claro: #fff5f8;
+        --tinta: #4a1022;
+        --destaque: #e8436f;
+        --destaque-tinta: #ffffff;
+        --botao: #ffffff;
+        --sombra: 0 8px 24px rgb(232 67 111 / 0.25);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        overflow: hidden;
+        background: radial-gradient(circle at 30% 20%, var(--fundo-claro), var(--fundo));
+        color: var(--tinta);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0 0 2rem;
+        font-size: clamp(2rem, 9vw, 3.5rem);
+      }
+
+      .botoes {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      button {
+        padding: 0.75rem 2.25rem;
+        border: 0;
+        border-radius: 999px;
+        font: inherit;
+        font-size: 1.25rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--sombra);
+        touch-action: manipulation;
+      }
+
+      #sim {
+        background: var(--destaque);
+        color: var(--destaque-tinta);
+      }
+
+      #nao {
+        background: var(--botao);
+        color: var(--tinta);
+      }
+
+      #nao.solto {
+        position: fixed;
+        z-index: 1;
+        transition:
+          left 0.25s ease,
+          top 0.25s ease;
+      }
+
+      .resposta {
+        display: none;
+      }
+
+      body.aceitou .pergunta {
+        display: none;
+      }
+
+      body.aceitou .resposta {
+        display: block;
+      }
+
+      .coracao {
+        width: 120px;
+        fill: var(--destaque);
+        animation: pulsar 1s ease-in-out infinite;
+      }
+
+      @keyframes pulsar {
+        50% {
+          transform: scale(1.15);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #nao.solto {
+          transition: none;
+        }
+
+        .coracao {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="pergunta">
+      <h1>quer ficar cmg?</h1>
+      <div class="botoes">
+        <button id="sim" type="button">Sim</button>
+        <button id="nao" type="button">Não</button>
+      </div>
+    </main>
+
+    <main class="resposta" aria-live="polite">
+      <svg class="coracao" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+        />
+      </svg>
+      <h1>eu já sabia</h1>
+    </main>
+
+    <script>
+      const sim = document.getElementById("sim");
+      const nao = document.getElementById("nao");
+      const margem = 16;
+
+      // Deixa uma vaga do mesmo tamanho no lugar do botão, para o "Sim" não pular quando o "Não" sai da fila.
+      function soltar() {
+        const caixa = nao.getBoundingClientRect();
+        const vaga = document.createElement("span");
+        vaga.style.width = caixa.width + "px";
+        vaga.style.height = caixa.height + "px";
+        vaga.setAttribute("aria-hidden", "true");
+        nao.before(vaga);
+        nao.style.left = caixa.left + "px";
+        nao.style.top = caixa.top + "px";
+        nao.classList.add("solto");
+        nao.getBoundingClientRect();
+      }
+
+      function sobrepoe(a, b) {
+        return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      }
+
+      function fugir() {
+        if (!nao.classList.contains("solto")) soltar();
+
+        const largura = nao.offsetWidth;
+        const altura = nao.offsetHeight;
+        const limiteX = Math.max(margem, window.innerWidth - largura - margem);
+        const limiteY = Math.max(margem, window.innerHeight - altura - margem);
+        const atual = nao.getBoundingClientRect();
+        const caixaSim = sim.getBoundingClientRect();
+        let x = margem;
+        let y = margem;
+
+        for (let tentativa = 0; tentativa < 30; tentativa++) {
+          x = margem + Math.random() * (limiteX - margem);
+          y = margem + Math.random() * (limiteY - margem);
+          const destino = {
+            left: x - margem,
+            right: x + largura + margem,
+            top: y - margem,
+            bottom: y + altura + margem,
+          };
+          const longe = Math.hypot(x - atual.left, y - atual.top) > 120;
+          if (longe && !sobrepoe(destino, caixaSim)) break;
+        }
+
+        nao.style.left = x + "px";
+        nao.style.top = y + "px";
+      }
+
+      nao.addEventListener("pointerenter", (evento) => {
+        if (evento.pointerType === "mouse") fugir();
+      });
+      nao.addEventListener("pointerdown", (evento) => {
+        evento.preventDefault();
+        fugir();
+      });
+      nao.addEventListener("click", (evento) => {
+        evento.preventDefault();
+        fugir();
+      });
+
+      sim.addEventListener("click", () => {
+        document.body.classList.add("aceitou");
+      });
+
+      window.addEventListener("resize", () => {
+        if (!nao.classList.contains("solto")) return;
+        const x = Math.min(parseFloat(nao.style.left), window.innerWidth - nao.offsetWidth - margem);
+        const y = Math.min(parseFloat(nao.style.top), window.innerHeight - nao.offsetHeight - margem);
+        nao.style.left = Math.max(margem, x) + "px";
+        nao.style.top = Math.max(margem, y) + "px";
+      });
+    </script>
+  </body>
+</html>
